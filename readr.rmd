@@ -1,0 +1,119 @@
+#All about readr
+
+Here we will learn about importing and exporting data with `readr` package
+
+```{r, include=FALSE}
+library(readr)
+```
+
+We all must have learnt about `read.csv()` function of Base R
+Frankly speaking, `read.csv()` is not the fastest data importing/exporting tool out there. But the biggest problem with it is that while importing, it converts all the characters into factors by default.
+
+`read_csv()` of `readr` package doesn't do that.
+
+Here we will be reading a text file called `bowens.csv` into R's working directory
+
+```{r}
+bowens <- read_csv("bowens.csv")
+head(bowens)
+```
+
+While reading the file, we can see a few notes that it has parsed with column specification:
+place as character (mentioned as `col_character()`)
+east as integer (mentioned as `col_integer()`)
+north as integer (mentioned as `col_integer()`)
+
+For understanding this, read further:
+
+There are two important parameters of `read_csv()` apart from the `file` argument itself.
+  * `col_types` - This is where the type of columns read is "stored". It contains many `col_*()` functions, where the "type" of variables is set. Some examples of `col_*` functions are `col_integer()`, `col_double()`, `col_skip()` [This tells R to skips a column]
+  * `col_names` - This parameter is setting the column names of the file being read. It can take 3 values, `TRUE`, `FALSE` or a character vector. If `TRUE`, the 1st line is read as headers. If `FALSE`, the 1st line is read as observation itself, the variables are automatically given names like V1, V2 etc. If a character vector is passed to this argument, the elements in the character vector are are the headers of our new object.
+  
+Lets check out our `bowens` dataset
+```{r}
+head(bowens)
+```
+
+Lets read the file again with our own specifications:
+
+```{r}
+bowens2 <-
+  read_csv(
+  "bowens.csv",
+  col_names = TRUE,
+  col_types = cols(
+  place = col_character(),
+  east = col_number(),
+  north = col_number()
+  )
+  )
+head(bowens2)
+```
+
+Lets skip a column
+
+```{r}
+bowens3 <- read_csv(
+  "bowens.csv",
+  col_names = TRUE,
+  col_types = cols(
+  place = col_character(),
+  east = col_number(),
+  north = col_skip()
+  )
+  )
+head(bowens3)
+```
+
+There is also an import function called `read_csv2()` function. This looks for `;` as separators instead of the `,`. The other functionalities of `read_csv()` remain the same.
+
+Let't try and read a tab-separated file, which has missing values in it
+```{r}
+worms_missing <- read_tsv("worms.missing.txt",
+         col_names = TRUE,
+         na = c("NA", "-"))
+head(worms_missing)
+```
+"-" and "NA" are read as missing values.
+
+`readr` package offers exporting data facilities as well.
+`write_csv()` is the function for it. One important problem of our base function `write.csv()`is that it duplicates the row numbers in the 1st column (by default). `write_csv()` doesn't.
+
+```{r}
+write_csv(worms_missing, "worms_missing.csv")
+write_csv(bowens, "worms_missing.csv", append = TRUE)
+```
+`file` and `path` are the 2 important parameters
+By default `col_names` is set to `!append`. So, when `append` mode is set on, the `col_names` cannot be edited. Pretty smart, right?
+
+We can coerce a column into another datatype by using `type_convert()`
+```{r}
+head(bowens2)
+#We will change the double type columns to int type
+bowens2$east <- parse_integer(bowens2$east)
+bowens2$north <- parse_integer(bowens2$north)
+head(bowens2)
+```
+
+It would be very useful if we could view the metadata before parsing. In simple words, if we can see the output data types of the data being converted, we can make changes accordingly
+
+```{r}
+spec_csv("mammal_sleep.csv")
+mammal <- read_csv("mammal_sleep.csv", col_types = cols(X1 = col_skip()))
+```
+
+There are other functions like `read_lines()`, which reads the file line by line and stores the result in a character vector and then, we have     `read_file()`, which reads the entire file into a vector of size 1.
+
+##Saving the entire metadata along with the data:
+
+In case, we need to store the data along with the metadata, `write_csv()` doesn't cut it. We need to store it using `write_rds()`
+```{r}
+write_rds(mammal, "mammals.rds")
+```
+
+The sister function for `write_rds()` is the `read_rds()`
+```{r}
+mammal2 <- read_rds("mammals.rds")
+identical(mammal, mammal2)
+```
+
